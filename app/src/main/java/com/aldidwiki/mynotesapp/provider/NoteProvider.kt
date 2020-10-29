@@ -25,8 +25,8 @@ class NoteProvider : ContentProvider() {
         /*
         Uri matcher untuk mempermudah identifier dengan menggunakan integer
         misal
-        uri com.dicoding.picodiploma.mynotesapp dicocokan dengan integer 1
-        uri com.dicoding.picodiploma.mynotesapp/# dicocokan dengan integer 2
+        uri com.aldidwiki.mynotesapp dicocokan dengan integer 1
+        uri com.aldidwiki.mynotesapp/# dicocokan dengan integer 2
          */
         init {
             // content://com.aldidwiki.mynotesapp/note
