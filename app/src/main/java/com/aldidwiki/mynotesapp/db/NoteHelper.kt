@@ -48,12 +48,12 @@ class NoteHelper(context: Context) {
         )
     }
 
-    fun queryById(): Cursor {
+    fun queryById(id: String): Cursor {
         return database.query(
                 DATABASE_TABLE,
                 null,
                 "$_ID = ?",
-                null,
+                arrayOf(id),
                 null,
                 null,
                 null

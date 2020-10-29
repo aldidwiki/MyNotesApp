@@ -1,12 +1,15 @@
 package com.aldidwiki.mynotesapp
 
 import android.content.Intent
+import android.database.ContentObserver
 import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aldidwiki.mynotesapp.adapter.NoteAdapter
-import com.aldidwiki.mynotesapp.db.NoteHelper
+import com.aldidwiki.mynotesapp.db.DatabaseContract.NoteColumns.Companion.CONTENT_URI
 import com.aldidwiki.mynotesapp.entity.Note
 import com.aldidwiki.mynotesapp.helper.MappingHelper
 import com.google.android.material.snackbar.Snackbar
@@ -19,7 +22,6 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var noteAdapter: NoteAdapter
-    private lateinit var noteHelper: NoteHelper
 
     companion object {
         private const val EXTRA_STATE = "EXTRA_STATE"
@@ -43,11 +45,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        noteHelper = NoteHelper.getInstance(applicationContext)
-        noteHelper.open()
+        val handlerThread = HandlerThread("DataObserver")
+        handlerThread.start()
+        val handler = Handler(handlerThread.looper)
+
+        val myObserver = object : ContentObserver(handler) {
+            override fun onChange(selfChange: Boolean) {
+                loadNotesAsync()
+            }
+        }
+
+        contentResolver.registerContentObserver(CONTENT_URI, true, myObserver)
 
         savedInstanceState?.let {
-            val list = savedInstanceState?.getParcelableArrayList<Note>(EXTRA_STATE)
+            val list = savedInstanceState.getParcelableArrayList<Note>(EXTRA_STATE)
             if (list != null) {
                 noteAdapter.listNotes = list
             }
@@ -59,11 +70,6 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putParcelableArrayList(EXTRA_STATE, noteAdapter.listNotes)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        noteHelper.close()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -99,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         GlobalScope.launch(Main) {
             progressbar.visibility = View.VISIBLE
             val deferredNotes = async(IO) {
-                val cursor = noteHelper.queryAll()
+                val cursor = contentResolver?.query(CONTENT_URI, null, null, null, null)
                 MappingHelper.mapCursorToArrayList(cursor)
             }
             progressbar.visibility = View.INVISIBLE
